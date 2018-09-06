@@ -298,7 +298,7 @@ class Win(QWidget):
     def __init__(self, parent):
         super(Win, self).__init__(parent)
 
-        self.setWindowTitle("AMD Threadripper Monitor")
+        self.setWindowTitle("AMD Ryzen Monitor (%s)" % CPU)
 
         # Charts
         self.usage = DynamicChart("CPU Usage", 100, ['Total'], '%', self)
