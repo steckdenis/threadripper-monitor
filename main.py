@@ -118,11 +118,12 @@ class CoreViewer(QWidget):
     def setUsage(self, thread, percent):
         """ Display a core usage
         """
-        delta = 255 - int(percent / 100. * 128.)
         usage = self.threads[thread]
 
         pal = usage.palette()
-        pal.setColor(QPalette.Window, QColor(delta, delta, 255))
+        c = QColor(RYZEN_ORANGE)
+        c.setAlpha(int(percent / 100. * 128.))
+        pal.setColor(QPalette.Window, c)
         usage.setPalette(pal)
         usage.setText(str(int(percent)) + '%')
 
@@ -227,7 +228,7 @@ class TR4Viewer(QFrame):
             self.dies[1].hide()
             self.dies[3].hide()
 
-        if NUM_DIES != 2:
+        if NUM_DIES == 1:
             self.dies[2].hide()
 
 class DynamicChart(QChartView):
