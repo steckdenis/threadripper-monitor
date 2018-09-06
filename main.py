@@ -27,18 +27,6 @@ RYZEN_GRAY = QColor(89, 89, 89)
 COLORS = [RYZEN_ORANGE, RYZEN_GRAY]
 
 # Detect the processor
-f = open('/proc/cpuinfo', 'r')
-
-for line in f:
-    parts = line.strip().split()
-
-    if len(parts) >= 7 and parts[0] == 'model' and parts[1] == 'name':
-        CPU = parts[6]
-        break
-
-f.close()
-
-# Print information about the processor
 CPUS = {
     '1900X': (2, 2),                # 2 dies, 2 cores per CCX
     '1920X': (2, 3),
@@ -46,9 +34,36 @@ CPUS = {
     '2920X': (2, 3),
     '2950X': (2, 4),
     '2970WX': (4, 3),
-    '2990WX': (4, 4)
+    '2990WX': (4, 4),
+    '1400': (1, 2),
+    '1500X': (1, 2),
+    '1600': (1, 3),
+    '1600X': (1, 3),
+    '1700': (1, 4),
+    '1700X': (1, 4),
+    '1800X': (1, 4),
+    '2600': (1, 3),
+    '2600X': (1, 3),
+    '2700': (1, 4),
+    '2700X': (1, 4),
 }
 
+f = open('/proc/cpuinfo', 'r')
+
+for line in f:
+    parts = line.strip().split()
+
+    if len(parts) >= 7 and parts[0] == 'model' and parts[1] == 'name':
+        CPU = parts[6]
+
+        if CPU not in CPUS:
+            CPU = parts[5]  # No "Threadripper" in the name
+
+        break
+
+f.close()
+
+# Print information about the processor
 print('Detected', 'known' if CPU in CPUS else 'unknown', 'CPU', CPU)
 
 if CPU in CPUS:
@@ -194,18 +209,26 @@ class TR4Viewer(QFrame):
         lay.setVerticalSpacing(16)
         lay.setContentsMargins(12, 12, 12, 12)
 
-        lay.addWidget(self.dies[0], 1, 0)   # Memory die on NUMA node 0
-        lay.addWidget(self.dies[1], 0, 0)   # IO die
-        lay.addWidget(self.dies[2], 0, 1)   # Memory die on NUMA node 2
-        lay.addWidget(self.dies[3], 1, 1)   # IO die
+        if NUM_DIES == 1:
+            # Desktop Ryzen
+            lay.addWidget(self.dies[0], 0, 0)
+        else:
+            # Threadripper
+            lay.addWidget(self.dies[0], 1, 0)   # Memory die on NUMA node 0
+            lay.addWidget(self.dies[1], 0, 0)   # IO die
+            lay.addWidget(self.dies[2], 0, 1)   # Memory die on NUMA node 2
+            lay.addWidget(self.dies[3], 1, 1)   # IO die
 
         # Cores as numbered by Linux, with the IO cores coming first
         self.cores = self.dies[0].cores + self.dies[2].cores + self.dies[1].cores + self.dies[3].cores
 
         # Hide inactive dies
-        if NUM_DIES == 2:
+        if NUM_DIES != 4:
             self.dies[1].hide()
             self.dies[3].hide()
+
+        if NUM_DIES != 2:
+            self.dies[2].hide()
 
 class DynamicChart(QChartView):
     """ Chart that displays sensors readings

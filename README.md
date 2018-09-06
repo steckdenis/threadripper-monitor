@@ -1,6 +1,6 @@
-# Threadripper Monitor
+# Ryzen Power and CPU Usage Monitor
 
-Most system monitors on Linux have a hard time with 32 cores and 64 threads. This program, made especially for AMD Threadripper processors, displays the CPU use of all the cores (and threads), in a nice graphical format that matches the physical implementation of the cores.
+Most system monitors on Linux have a hard time with 32 cores and 64 threads. This program, made especially for AMD Threadripper processors, displays the CPU use of all the cores (and threads), in a nice graphical format that matches the physical implementation of the cores (on Threadripper and Ryzen processors with 4, 2 or 1 Zeppelin die).
 
 ## Dependencies
 
@@ -36,3 +36,5 @@ And you are greeted by a nice GUI with animated graphs of the CPU usage and powe
 
 - Currently, this program only runs on Linux. Reading system information (CPU use and power consumption) on Windows is much harder, and there are already plenty of programs that do that on Windows.
 - The CPU topology is detected by reading `/proc/cpuinfo` and matching the name of the CPU. Future CPUs will need this program to be updated.
+- This program assumes that SMT is available and used. As such, it does not support the low-end Ryzen 1st gen processors without SMT
+- APUs are not yet supported. Some simple changes should be enough to add support for them, as they are basically dies with only one CCX.
