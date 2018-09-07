@@ -28,6 +28,7 @@ COLORS = [RYZEN_ORANGE, RYZEN_GRAY]
 
 # Detect the processor
 CPUS = {
+    # Threadripper
     '1900X': (2, 2),                # 2 dies, 2 cores per CCX
     '1920X': (2, 3),
     '1950X': (2, 4),
@@ -35,6 +36,7 @@ CPUS = {
     '2950X': (2, 4),
     '2970WX': (4, 3),
     '2990WX': (4, 4),
+    # Desktop Ryzen
     '1400': (1, 2),
     '1500X': (1, 2),
     '1600': (1, 3),
@@ -46,27 +48,45 @@ CPUS = {
     '2600X': (1, 3),
     '2700': (1, 4),
     '2700X': (1, 4),
+    # EPYC
+    '7351P': (4, 2),
+    '7401P': (4, 3),
+    '7551P': (4, 4),
+    '7251': (4, 1),
+    '7281': (4, 2),
+    '7301': (4, 2),
+    '7351': (4, 2),
+    '7401': (4, 3),
+    '7451': (4, 3),
+    '7501': (4, 4),
+    '7551': (4, 4),
+    '7601': (4, 4),
 }
+CPU_NAMES = list(CPUS.keys())
+CPU = None
+IS_EPYC = False
 
 f = open('/proc/cpuinfo', 'r')
 
 for line in f:
     parts = line.strip().split()
 
-    if len(parts) >= 7 and parts[0] == 'model' and parts[1] == 'name':
-        CPU = parts[6]
+    if 'Ryzen' in parts or 'EPYC' in parts:
+        for name in CPU_NAMES:
+            if name in parts:
+                CPU = name
+                break
 
-        if CPU not in CPUS:
-            CPU = parts[5]  # No "Threadripper" in the name
+        IS_EPYC = 'EPYC' in parts
 
         break
 
 f.close()
 
 # Print information about the processor
-print('Detected', 'known' if CPU in CPUS else 'unknown', 'CPU', CPU)
+print('Detected', CPU if CPU else 'unknown CPU')
 
-if CPU in CPUS:
+if CPU is not None:
     NUM_DIES = CPUS[CPU][0]
     NUM_CORES_PER_CCX = CPUS[CPU][1]
 else:
@@ -155,7 +175,10 @@ class CCXViewer(QFrame):
                 lay.addWidget(core, y, x)
                 self.cores.append(core)
             else:
-                lay.addWidget(QLabel(), y, x)
+                placeholder = QLabel()
+                placeholder.setFixedSize(60, 60)
+
+                lay.addWidget(placeholder, y, x)
 
 class DieViewer(QWidget):
     """ Displays statistics about a 2-CCX die
@@ -200,9 +223,9 @@ class TR4Viewer(QFrame):
         # Create the dies
         self.dies = [
             DieViewer(self, True),
-            DieViewer(self, False),
+            DieViewer(self, IS_EPYC),
             DieViewer(self, True),
-            DieViewer(self, False)
+            DieViewer(self, IS_EPYC)
         ]
 
         lay = QGridLayout(self)
@@ -214,7 +237,7 @@ class TR4Viewer(QFrame):
             # Desktop Ryzen
             lay.addWidget(self.dies[0], 0, 0)
         else:
-            # Threadripper
+            # Threadripper or EPYC
             lay.addWidget(self.dies[0], 1, 0)   # Memory die on NUMA node 0
             lay.addWidget(self.dies[1], 0, 0)   # IO die
             lay.addWidget(self.dies[2], 0, 1)   # Memory die on NUMA node 2

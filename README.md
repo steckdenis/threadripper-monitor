@@ -1,6 +1,6 @@
 # Ryzen Power and CPU Usage Monitor
 
-Most system monitors on Linux have a hard time with 32 cores and 64 threads. This program, made especially for AMD Threadripper processors, displays the CPU use of all the cores (and threads), in a nice graphical format that matches the physical implementation of the cores (on Threadripper and Ryzen processors with 4, 2 or 1 Zeppelin die).
+Most system monitors on Linux have a hard time with 32 cores and 64 threads. This program, made especially for AMD Threadripper processors but also compatible with Desktop Ryzen and EPYC, displays the CPU use of all the cores (and threads), in a nice graphical format that matches the physical implementation of the cores (on EPYC, Threadripper and Ryzen processors with 4, 2 or 1 Zeppelin dies).
 
 ## Dependencies
 
@@ -32,7 +32,7 @@ Once RAPL and the Python dependencies, the monitor is super easy to use:
 
 And you are greeted by a nice GUI with animated graphs of the CPU usage and power consumption. The main area of the window displays the 2 or 4 dies of your CPU, with their two CCXes, each having 2, 3 or 4 cores, each having 2 threads. Threads become darker blue as they are used. A red bar also displays the power usage of individual cores, in addition to the main graph that shows the total power use of the whole package, and all the cores combined.
 
-For **Threadripper WX** variants, the orange dies are connected to memory (NUMA nodes 0 and 2, cores numbered 0 to 16 with Kernel 4.18), while the gray dies are *compute-only*.
+For **Threadripper WX** variants, the orange dies are connected to memory (NUMA nodes 0 and 2, cores numbered 0 to 16 with Kernel 4.18), while the gray dies are *compute-only*. On **EPYC**, all four dies are supposed to be connected to memory, and are thus displayed in orange.
 
 ## Caveats
 
