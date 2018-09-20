@@ -20,11 +20,20 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtChart import *
 
-import subprocess
+import sys
 
 RYZEN_ORANGE = QColor(243, 102, 33)
 RYZEN_GRAY = QColor(89, 89, 89)
 COLORS = [RYZEN_ORANGE, RYZEN_GRAY]
+
+# Detect the operating system
+if sys.platform == 'linux':
+    from linux import *
+else:
+    app = QApplication([])
+
+    QMessageBox.critical(None, 'Unsupported Platform', 'This tool currently only runs on Linux')
+    quit()
 
 # Detect the processor
 CPUS = {
@@ -62,26 +71,8 @@ CPUS = {
     '7551': (4, 4),
     '7601': (4, 4),
 }
-CPU_NAMES = list(CPUS.keys())
-CPU = None
-IS_EPYC = False
 
-f = open('/proc/cpuinfo', 'r')
-
-for line in f:
-    parts = line.strip().split()
-
-    if 'Ryzen' in parts or 'EPYC' in parts:
-        for name in CPU_NAMES:
-            if name in parts:
-                CPU = name
-                break
-
-        IS_EPYC = 'EPYC' in parts
-
-        break
-
-f.close()
+CPU, IS_EPYC = get_cpu_name(list(CPUS.keys()))
 
 # Print information about the processor
 print('Detected', CPU if CPU else 'unknown CPU')
@@ -90,7 +81,7 @@ if CPU is not None:
     NUM_DIES = CPUS[CPU][0]
     NUM_CORES_PER_CCX = CPUS[CPU][1]
 else:
-    NUM_DIES = 2
+    NUM_DIES = 1
     NUM_CORES_PER_CCX = 4
 
 NUM_CORES = NUM_DIES * 2 * NUM_CORES_PER_CCX
@@ -339,77 +330,15 @@ class Win(QWidget):
         lay.addStretch()
         lay.setSpacing(0)
 
+        # Statistics producer
+        self.stats = Statistics(self.tr4, self.usage, self.power, NUM_CORES)
+        self.stats.update()
+
         # Timer
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.update)
+        self.timer.timeout.connect(self.stats.update)
         self.timer.start()
-
-        # Open the core usage statistics
-        self.stat = open('/proc/stat', 'r')
-        self.old_totals = [0] * 64
-        self.old_idles = [0] * 64
-        self.update()
-
-    def update(self):
-        """ Update statistics
-        """
-        # Update CPU core usage
-        self.stat.seek(0)
-        core = 0
-        total_use = 0.
-
-        for line in self.stat:
-            parts = line.split()
-
-            if len(parts) == 11 and len(parts[0]) > 3 and parts[0][0:3] == 'cpu':
-                cpu_number = int(parts[0][3:])
-                user = int(parts[1])
-                nice = int(parts[2])
-                system = int(parts[3])
-                idle = int(parts[4])
-                total = user + nice + system + idle
-
-                total_delta = total - self.old_totals[cpu_number]
-                idle_delta = idle - self.old_idles[cpu_number]
-                skip = (self.old_totals[cpu_number] == 0)
-
-                self.old_totals[cpu_number] = total
-                self.old_idles[cpu_number] = idle
-
-                if skip:
-                    continue
-
-                use = (total_delta - idle_delta) / total_delta
-                total_use += use
-
-                if cpu_number // 2 < NUM_CORES:
-                    self.tr4.cores[cpu_number // 2].setUsage(cpu_number % 2, int(use * 100))
-
-        # Total CPU usage
-        self.usage.addReading(0, (total_use / (NUM_CORES * 2.)) * 100.)
-
-        # Use RAPL to get the power usage
-        cores_power = 0
-        package_power = 0
-
-        with subprocess.Popen(['rapl'], stdout=subprocess.PIPE) as rapl:
-            for line in rapl.stdout:
-                parts = str(line, 'ascii').strip().split()
-
-                if len(parts) == 7 and parts[0] == 'Core':
-                    # A core consumption, with total package consumption
-                    core_index = int(parts[1][:-1])     # there is a comma at the end of the number
-                    core_power = float(parts[4][:-2])   # there is a "W," at the end of the number
-                    package_power = float(parts[6][:-1])
-
-                    if core_index < NUM_CORES:
-                        self.tr4.cores[core_index].setPower(core_power)
-                elif len(parts) == 3 and parts[1] == 'sum:':
-                    cores_power = float(parts[2][:-1])
-
-        self.power.addReading(1, cores_power)
-        self.power.addReading(0, package_power)
 
 if __name__ == '__main__':
     app = QApplication([])
