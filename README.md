@@ -7,7 +7,8 @@ Most system monitors on Linux have a hard time with 32 cores and 64 threads. Thi
 - Python 3
 - PyQt5
 - PyQtChart
-- `rapl-read-ryzen`
+- Linux: `rapl-read-ryzen`
+- Windows: `pywin32` and `WMI`
 
 The Python dependencies are installable with `pip`, and come pre-packaged in wheels. RAPL has to be installed from [its Github repository](https://github.com/djselbeck/rapl-read-ryzen).
 
@@ -36,7 +37,7 @@ For **Threadripper WX** variants, the orange dies are connected to memory (NUMA 
 
 ## Caveats
 
-- Currently, this program only runs on Linux. Reading system information (CPU use and power consumption) on Windows is much harder, and there are already plenty of programs that do that on Windows.
-- The CPU topology is detected by reading `/proc/cpuinfo` and matching the name of the CPU. Future CPUs will need this program to be updated.
+- Windows support is difficult to achieve and requires extra dependencies (see above). Currently, power consumption monitoring is not supported on Windows.
+- The CPU topology is detected by reading `/proc/cpuinfo` (or using WMI on Windows) and matching the name of the CPU. Future CPUs will need this program to be updated.
 - This program assumes that SMT is available and used. As such, it does not support the low-end Ryzen 1st gen processors without SMT
 - APUs are not yet supported. Some simple changes should be enough to add support for them, as they are basically dies with only one CCX.

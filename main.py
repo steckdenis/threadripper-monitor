@@ -29,6 +29,8 @@ COLORS = [RYZEN_ORANGE, RYZEN_GRAY]
 # Detect the operating system
 if sys.platform == 'linux':
     from linux import *
+elif sys.platform == 'win32':
+	from windows import *
 else:
     app = QApplication([])
 
@@ -339,6 +341,10 @@ class Win(QWidget):
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.stats.update)
         self.timer.start()
+        
+        # Disable power statistics on Windows for now
+        if sys.platform == 'win32':
+            self.power.hide()
 
 if __name__ == '__main__':
     app = QApplication([])
