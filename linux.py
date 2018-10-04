@@ -80,7 +80,7 @@ class Statistics:
                 if skip:
                     continue
 
-                use = (total_delta - idle_delta) / total_delta
+                use = (total_delta - idle_delta) / (total_delta + 1e-6)
                 total_use += use
 
                 if cpu_number // 2 < self.num_cores:

@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtChart import *
 
 import sys
+import psutil
 
 RYZEN_ORANGE = QColor(243, 102, 33)
 RYZEN_GRAY = QColor(89, 89, 89)
@@ -99,6 +100,7 @@ class CoreViewer(QWidget):
         self.setPalette(pal)
         self.setAutoFillBackground(True)
         self.setFixedSize(60, 60)
+        self.setAcceptDrops(True)
 
         # CPU usage label
         self.threads = []
@@ -120,6 +122,67 @@ class CoreViewer(QWidget):
         self.power.setAutoFillBackground(True)
 
         self.setPower(0)
+
+    def mousePressEvent(self, event):
+        """ Start a drag operation of the processes associated with a thread
+            to another core
+        """
+        if event.button() != Qt.LeftButton:
+            return
+
+        if event.x() < 30:
+            thread = 0
+        else:
+            thread = 1
+
+        data = QMimeData()
+        data.setData("text/x-tr4-thread-index", bytes(str(self.index * 2 + thread), 'ascii'))
+
+        drag = QDrag(self)
+        drag.setMimeData(data)
+        drag.exec_()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat("text/x-tr4-thread-index"):
+            event.accept()
+
+    def dropEvent(self, event):
+        """ Change the affinity of all the processes so that they move to this
+            core and thread.
+        """
+        event.acceptProposedAction()
+
+        if event.pos().x() < 30:
+            thread = 0
+        else:
+            thread = 1
+
+        original_index = int(str(event.mimeData().data("text/x-tr4-thread-index"), 'ascii'))
+        target_index = self.index * 2 + thread
+
+        if target_index != original_index:
+            for p in psutil.process_iter():
+                if p.uids().real == 0:
+                    # Skip root processes
+                    continue
+
+                # Set the affinity of all the threads in the process
+                affinity = p.cpu_affinity()
+
+                if original_index in affinity:
+                    i = affinity.index(original_index)
+                    affinity[i] = target_index
+
+                    try:
+                        for t in p.threads():
+                            psutil.Process(t.id).cpu_affinity(affinity)
+                    except Exception as e:
+                        pass
+
+    def setCoreIndex(self, index):
+        """ Set the core index of this viewer, used by drag and drop events
+        """
+        self.index = index
 
     def setPower(self, power):
         """ Display a power usage, between 0 and 25W
@@ -238,6 +301,9 @@ class TR4Viewer(QFrame):
 
         # Cores as numbered by Linux, with the IO cores coming first
         self.cores = self.dies[0].cores + self.dies[2].cores + self.dies[1].cores + self.dies[3].cores
+
+        for i, c in enumerate(self.cores):
+            c.setCoreIndex(i)
 
         # Hide inactive dies
         if NUM_DIES != 4:
