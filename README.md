@@ -18,7 +18,7 @@ If it is not yet merged, be sure to use my branch of RAPL, available [here](http
 
     git clone https://github.com/djselbeck/rapl-read-ryzen.git
     cd rapl-read-ryzen
-    gcc -std=c99 -O2 -o rapl -lm ryzen.c
+    gcc -std=c99 -O2 -o rapl ryzen.c -lm
     sudo cp rapl /usr/bin
     sudo chown root:root /usr/bin/rapl
     sudo chmod +s /usr/bin/rapl
